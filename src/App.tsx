@@ -1,5 +1,5 @@
 import {useState} from "react";
-import {AlertTriangle,ArrowRight,Check,ChevronRight,Eye,KeyRound,LockKeyhole,MessageCircleWarning,RotateCcw,ShieldCheck,Smartphone,UserRoundX,X} from "lucide-react";
+import {AlertTriangle,ArrowRight,Check,ChevronRight,Copy,Eye,KeyRound,LockKeyhole,MessageCircleWarning,RotateCcw,Share2,ShieldCheck,Smartphone,UserRoundX,X} from "lucide-react";
 
 const questions=[
  {category:"pigeon",channel:"Mensaje",from:"Aviso de cuenta",text:"Su cuenta será suspendida. Abra el siguiente enlace para seguir disfrutando de nuestro contenido.",prompt:"¿Qué haces?",options:["Abro el enlace para evitar que suspendan mi cuenta.","Reviso quién envió el mensaje y después decido si abrirlo.","No abro el enlace; ingreso directamente a la aplicación o página oficial para revisar mi cuenta."],scores:[2,1,0],correct:2,why:"La amenaza de suspensión busca que actúes con prisa. Revisa tu cuenta únicamente desde la aplicación o página oficial."},
@@ -38,11 +38,11 @@ const habits=[
 ];
 
 export default function Home(){
- const[started,setStarted]=useState(false),[current,setCurrent]=useState(0),[selected,setSelected]=useState<number|null>(null),[answers,setAnswers]=useState<number[]>([]),[done,setDone]=useState(false),[slide,setSlide]=useState(0);
+ const[started,setStarted]=useState(false),[current,setCurrent]=useState(0),[selected,setSelected]=useState<number|null>(null),[answers,setAnswers]=useState<number[]>([]),[done,setDone]=useState(false),[slide,setSlide]=useState(0),[copied,setCopied]=useState(false);
  const q=questions[current];
  function choose(i:number){if(selected!==null)return;setSelected(i);setAnswers(previous=>{const updated=[...previous];updated[current]=q.scores[i];return updated})}
  function next(){if(current===questions.length-1)setDone(true);else{setCurrent(n=>n+1);setSelected(null)}}
- function restart(){setCurrent(0);setAnswers([]);setSelected(null);setDone(false);setStarted(true)}
+ function restart(){setCurrent(0);setAnswers([]);setSelected(null);setDone(false);setCopied(false);setStarted(true)}
  const answerAt=(index:number)=>answers[index]??1;
  const safetyAt=(index:number)=>(2-answerAt(index))/2;
  const riskAt=(index:number)=>answerAt(index)/2;
@@ -74,6 +74,15 @@ export default function Home(){
  const result=animalResults[winningProfile.category as keyof typeof animalResults];
  const profileAffinity=Math.min(100,Math.round(winningProfile.score));
  const assetBase="./";
+ const shareSlugs={pigeon:"paloma",raccoon:"mapache",hedgehog:"erizo",dog:"perro",turtle:"tortuga",sloth:"perezoso",owl:"buho",axolotl:"ajolote"};
+ const shareSlug=shareSlugs[winningProfile.category as keyof typeof shareSlugs];
+ const shareUrl=`https://andrea-xeag.github.io/protege-tu-vida-digital/resultados/${shareSlug}/`;
+ const shareText=`${result.title}: ${result.trait}. ¿Qué animal de seguridad digital eres?`;
+ async function shareAnimal(){
+  if(navigator.share){try{await navigator.share({title:result.title,text:shareText,url:shareUrl});return}catch(error){if(error instanceof DOMException&&error.name==="AbortError")return}}
+  window.open(`https://wa.me/?text=${encodeURIComponent(`${shareText}\n${shareUrl}`)}`,"_blank","noopener,noreferrer");
+ }
+ async function copyShareLink(){await navigator.clipboard.writeText(shareUrl);setCopied(true);window.setTimeout(()=>setCopied(false),2500)}
  const selectedScore=selected===null?null:q.scores[selected];
  const feedback=selectedScore===2?"Esta respuesta aumenta tu nivel de riesgo.":selectedScore===1?"Es una precaución útil, pero todavía existe riesgo.":"Esta es la acción más segura.";
  return <main>
@@ -87,7 +96,7 @@ export default function Home(){
   <section className="quiz-section" id="quiz"><div className="section-intro"><p className="material-tag light">RECURSO 2 DE 4 · QUIZ DE EVALUACIÓN</p></div>
    <div className="quiz-shell">
    {!started?<div className="quiz-welcome"><div className="big-shield"><ShieldCheck size={58}/></div><div><span className="mini-label">12 SITUACIONES · 8 ANIMALES DE SEGURIDAD</span><h3>Inicia el Quiz Gratis aquí</h3><p>Lee cada situación y elige la respuesta que más se parezca a lo que harías. Responde con sinceridad para obtener un resultado útil.</p><button className="primary" onClick={()=>setStarted(true)}>Iniciar quiz <ChevronRight size={21}/></button></div></div>
-   :done?<div className="result"><div className={`animal-portrait sprite-${result.sprite} ${winningProfile.category}`} style={{backgroundImage:`url(${assetBase}animal-results-${result.sprite}.webp)`}} role="img" aria-label={`Ilustración de ${result.name}`}/><p className="mini-label">TU PERFIL DE COMPORTAMIENTO DIGITAL · {profileAffinity}% DE AFINIDAD</p><h3>{result.title}</h3><h4>{result.trait}</h4><div className="profile-insights"><article className="strength"><b>Tu fortaleza</b><p>{result.strength}</p></article><article className="opportunity"><b>Tu área de oportunidad</b><p>{result.opportunity}</p></article><article className="recommendation"><b>Tu siguiente paso</b><p>{result.recommendation}</p></article></div><div className="survey result-survey"><p className="mini-label">TU OPINIÓN TAMBIÉN CUENTA</p><h3>Cuéntanos qué animal de seguridad eres</h3><p>Ahora que conoces tu resultado, ayúdanos dejando un comentario en este breve formulario.</p><iframe src="https://docs.google.com/forms/d/e/1FAIpQLSdVlpiZOhdv8jcaMHseabzMs9kikyS7ddIJCNGBT2aLJzG4Hg/viewform?embedded=true" title="Formulario de comentarios sobre la campaña">Cargando…</iframe></div><button className="secondary" onClick={restart}><RotateCcw size={19}/>Volver a intentarlo</button></div>
+   :done?<div className="result"><div className={`animal-portrait sprite-${result.sprite} ${winningProfile.category}`} style={{backgroundImage:`url(${assetBase}animal-results-${result.sprite}.webp)`}} role="img" aria-label={`Ilustración de ${result.name}`}/><p className="mini-label">TU PERFIL DE COMPORTAMIENTO DIGITAL · {profileAffinity}% DE AFINIDAD</p><h3>{result.title}</h3><h4>{result.trait}</h4><div className="profile-insights"><article className="strength"><b>Tu fortaleza</b><p>{result.strength}</p></article><article className="opportunity"><b>Tu área de oportunidad</b><p>{result.opportunity}</p></article><article className="recommendation"><b>Tu siguiente paso</b><p>{result.recommendation}</p></article></div><div className="share-result"><p>Comparte tu animal e invita a alguien a descubrir el suyo.</p><div className="share-actions"><button className="share-primary" onClick={shareAnimal}><Share2 size={19}/>Compartir mi animal</button><button className="share-copy" onClick={copyShareLink}><Copy size={18}/>{copied?"¡Enlace copiado!":"Copiar enlace"}</button></div></div><div className="survey result-survey"><p className="mini-label">TU OPINIÓN TAMBIÉN CUENTA</p><h3>Cuéntanos qué animal de seguridad eres</h3><p>Ahora que conoces tu resultado, ayúdanos dejando un comentario en este breve formulario.</p><iframe src="https://docs.google.com/forms/d/e/1FAIpQLSdVlpiZOhdv8jcaMHseabzMs9kikyS7ddIJCNGBT2aLJzG4Hg/viewform?embedded=true" title="Formulario de comentarios sobre la campaña">Cargando…</iframe></div><button className="secondary" onClick={restart}><RotateCcw size={19}/>Volver a intentarlo</button></div>
    :<div className="question-view"><div className="quiz-progress"><span>Situación {current+1} de {questions.length}</span><div><i style={{width:`${((current+1)/questions.length)*100}%`}}/></div></div><div className="message-card"><div className="message-meta"><span><MessageCircleWarning size={18}/>{q.channel}</span><small>{q.from}</small></div><p>“{q.text}”</p></div><h3>{q.prompt}</h3><div className="answers">{q.options.map((option,i)=><button key={option} className={selected===null?"":i===q.correct?"correct":i===selected?"wrong":"muted"} onClick={()=>choose(i)} disabled={selected!==null}><span>{String.fromCharCode(65+i)}</span>{option}{selected!==null&&i===q.correct?<Check size={20}/>:selected===i&&i!==q.correct?<X size={20}/>:null}</button>)}</div>{selected!==null&&<div className={`feedback ${selectedScore===0?"good":"care"}`}><b>{feedback}</b><p>{q.why}</p><small>Esta respuesta suma {selectedScore} {selectedScore===1?"punto":"puntos"} de riesgo.</small><button onClick={next}>{current===questions.length-1?"Ver mi resultado":"Siguiente situación"}<ArrowRight size={18}/></button></div>}</div>}
    </div>
   </section>
